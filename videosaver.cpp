@@ -72,14 +72,20 @@ void VideoSaver::run() {
     encode_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
     encode_ctx->width = decodedFrame1->width;
     encode_ctx->height = decodedFrame1->height;
-    encode_ctx->time_base = AVRational{1, 25};
-    encode_ctx->framerate = AVRational{25, 1};
+    encode_ctx->time_base =decode_fmt_ctx->streams[0]->time_base;
+
+//        AVRational{1, 25};
+    encode_ctx->framerate =decoder_ctx->framerate;
+//        AVRational{25, 1};
     encode_ctx->sample_aspect_ratio = decodedFrame1->sample_aspect_ratio;
     encode_ctx->color_range = decodedFrame1->color_range;
     encode_ctx->color_primaries = decodedFrame1->color_primaries;
     encode_ctx->color_trc = decodedFrame1->color_trc;
     encode_ctx->colorspace = decodedFrame1->colorspace;
     encode_ctx->chroma_sample_location = decodedFrame1->chroma_location;
+    encode_ctx->gop_size = 30;
+    encode_ctx->max_b_frames = 10;
+    encode_ctx->profile = FF_PROFILE_H264_MAIN;
 
     if (encode_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
         encode_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
