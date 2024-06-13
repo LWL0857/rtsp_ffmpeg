@@ -241,6 +241,7 @@ VideoSaver::VideoSaver(FrameBuffer &frameBuffer, AVCodecContext *decoder_ctx, AV
     enframe = nullptr;
     enpkt = nullptr;
     sws_ctx = nullptr;
+
 }
 
 VideoSaver::~VideoSaver() {
@@ -408,7 +409,4 @@ void VideoSaver::stop() {
     stopFlag = true;
 }
 
-QImage VideoSaver::getFrame(const QImage &image)
-{
 
-}

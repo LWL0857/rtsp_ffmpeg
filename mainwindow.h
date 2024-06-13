@@ -46,7 +46,9 @@ private slots:
 //    void on_connect_clicked();
 
 //    void on_disconnect_clicked();
-
+signals:
+    void saveFilename(const QString  &filename);
+    void stopSave();
 private:
     QLabel *videoLabel;
     FrameBuffer frameBuffer;

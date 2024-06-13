@@ -13,6 +13,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 #include "framebuffer.h"
+#include <QImage>
 
 class VideoSaver : public QThread {
     Q_OBJECT
@@ -21,7 +22,7 @@ public:
     ~VideoSaver();
     void run() override;
     void stop();
-    Qimage getFrame(const QImage &image);
+    void getFrame(const QImage &image);
 
 private:
 
@@ -37,6 +38,12 @@ private:
     struct SwsContext *sws_ctx;
     QString filename;
     bool stopFlag;
+    QImage image1;
 };
+
+inline void VideoSaver::getFrame(const QImage &image)
+{
+    image1=image;
+}
 
 #endif // VIDEOSAVER_H

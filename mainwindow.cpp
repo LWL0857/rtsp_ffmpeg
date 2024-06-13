@@ -46,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->saveButton, &QPushButton::clicked, this, &MainWindow::onSave);
     connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::onStop);
     connect(ui->stopsaveButton, &QPushButton::clicked, this, &MainWindow::onStopSave);
+ 
 }
 
 
@@ -62,10 +63,11 @@ void MainWindow::onPlay()
     string inputVideoPath_="rtsp://"+ipStr_+":"+portStr_+"/"+pwdStr_;
     QString url = QString::fromStdString(inputVideoPath_);
     videoDecoder = new VideoDecoder(url, frameBuffer);
-    videoDisplay = new VideoDisplay(ui->videoLabel1, frameBuffer);
+    videoDisplay = new VideoDisplay(ui->videoLabel1, frameBuffer,videoDecoder->getFormatContext(),videoDecoder->getCodecContext());
 
     connect(videoDisplay, &VideoDisplay::frameReady, this, &MainWindow::displayFrame);
-   
+    connect(this,&MainWindow::saveFilename,videoDisplay,&VideoDisplay::startSave);
+    connect(this,&MainWindow::stopSave,videoDisplay,&VideoDisplay::stopSave);
 
     videoDecoder->start();
     videoDisplay->start();
@@ -82,12 +84,14 @@ void MainWindow::onSave()
                        ".avi";
     std::cout<<outputVideoPath_<<std::endl;
     ui->saveVideoPath->setText(QString::fromStdString(outputVideoPath_));
+    QString qFilename = QString::fromStdString(outputVideoPath_);
 
 
     if (videoDecoder) {
-        videoSaver = new VideoSaver(frameBuffer, videoDecoder->getCodecContext(),videoDecoder->getFormatContext(),outputVideoPath_.c_str());
+        emit saveFilename(qFilename);
+        // videoSaver = new VideoSaver(frameBuffer, videoDecoder->getCodecContext(),videoDecoder->getFormatContext(),outputVideoPath_.c_str());
         // connect(videoDisplay, &VideoDisplay::frameReady, videoSaver, &videoSaver::getFrame);
-        videoSaver->start();
+        // videoSaver->start();
     }
 
 }
@@ -101,12 +105,12 @@ void MainWindow::onStop()
         videoDecoder = nullptr;
 //        int avformat_close_input2(AVFormatContext *&s, AVDictionary *opts)
     }
-        if (videoSaver) {
-        videoSaver->stop();
-        videoSaver->wait();
-        delete videoSaver;
-        videoSaver = nullptr;
-    }
+    //     if (videoSaver) {
+    //     videoSaver->stop();
+    //     videoSaver->wait();
+    //     delete videoSaver;
+    //     videoSaver = nullptr;
+    // }
     if (videoDisplay) {
         videoDisplay->stop();
         videoDisplay->wait();
@@ -118,12 +122,15 @@ void MainWindow::onStop()
 
 void MainWindow::onStopSave()
 {
-    if (videoSaver) {
-        videoSaver->stop();
-        videoSaver->wait();
-        delete videoSaver;
-        videoSaver = nullptr;
+    if (videoDisplay) {
+        emit stopSave();
     }
+    // if (videoSaver) {
+    //     videoSaver->stop();
+    //     videoSaver->wait();
+    //     delete videoSaver;
+    //     videoSaver = nullptr;
+    // }
 
 }
 void MainWindow::displayFrame(const QImage &image)
