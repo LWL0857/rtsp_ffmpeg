@@ -186,7 +186,7 @@ void VideoSaver::run() {
                   qDebug() << " enpkt->stream_index = video_stream->index;";
                 enpkt->stream_index = video_stream->index;
                      qDebug() << "  av_interleaved_write_frame(decode_fmt_ctx, enpkt);";
-                av_interleaved_write_frame(decode_fmt_ctx, enpkt);
+                av_interleaved_write_frame(encode_fmt_ctx, enpkt);
                      qDebug() << "   av_packet_unref(enpkt);";
                 av_packet_unref(enpkt);
             }
