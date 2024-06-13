@@ -127,6 +127,7 @@ decoder_ctx=videoDecoder->getCodecContext();
         }
     }
 
+
     if (avformat_write_header(encode_fmt_ctx, nullptr) < 0) {
         qDebug() << "Failed to write header";
         return;

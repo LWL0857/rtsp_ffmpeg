@@ -13,6 +13,7 @@ SOURCES += \
     framebuffer.cpp \
     main.cpp \
     mainwindow.cpp \
+    show.cpp \
     videodecoder.cpp \
     videodisplay.cpp \
     videosaver.cpp
@@ -20,13 +21,15 @@ SOURCES += \
 HEADERS += \
     framebuffer.h \
     mainwindow.h \
+    show.h \
     videodecoder.h \
     videodisplay.h \
     videosaver.h
 
 
 FORMS += \
-    mainwindow.ui
+    mainwindow.ui \
+    show.ui
 win32 {
     LIBS += -L$$PWD/lib/SDL2/lib/x86 \
         -L$$PWD/lib/ffmpeg-4.2.1-win32-dev/lib \

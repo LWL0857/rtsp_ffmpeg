@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->saveButton, &QPushButton::clicked, this, &MainWindow::onSave);
     connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::onStop);
     connect(ui->stopsaveButton, &QPushButton::clicked, this, &MainWindow::onStopSave);
+    ui->videoLabel2->hide();
  
 }
 MainWindow::~MainWindow()
