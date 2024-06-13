@@ -17,12 +17,12 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 #include "framebuffer.h"
-
+#include "videodecoder.h"
 
 class VideoDisplay : public QThread {
     Q_OBJECT
 public:
-    VideoDisplay(QLabel *videoLabel, FrameBuffer &frameBuffer,  AVFormatContext *decode_fmt_ctx,AVCodecContext *decoder_ctx);
+    VideoDisplay(QLabel *videoLabel, FrameBuffer &frameBuffer,VideoDecoder *videoDecoder);
     ~VideoDisplay();
     void run() override;
     void stop();
@@ -38,8 +38,9 @@ signals:
 private:
     QLabel *videoLabel;
     FrameBuffer &frameBuffer;
-    bool stopFlag;
+
     //保存视频的相关变量
+    VideoDecoder *videoDecoder;
     int pts;
     QString filename;
     AVFormatContext *encode_fmt_ctx;
@@ -55,6 +56,7 @@ private:
     struct SwsContext *ensws_ctx;
     bool saveFlag;//开始保存的标志位
     bool stopSaveFlag;//停止保存的标志位
+      bool stopFlag;
 };
 
 #endif // VIDEODISPLAY_H

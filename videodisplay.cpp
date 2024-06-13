@@ -1,6 +1,6 @@
 #include "videodisplay.h"
 VideoDisplay::VideoDisplay(QLabel *videoLabel, FrameBuffer &frameBuffer,
-AVFormatContext *decode_fmt_ctx,AVCodecContext *decoder_ctx):videoLabel(videoLabel), frameBuffer(frameBuffer),decode_fmt_ctx(decode_fmt_ctx), decoder_ctx(decoder_ctx), stopFlag(false) {
+                           VideoDecoder *videoDecoder):videoLabel(videoLabel), frameBuffer(frameBuffer),videoDecoder(videoDecoder), stopFlag(false) {
     encode_fmt_ctx = nullptr;
     encode_ctx = nullptr;
     video_stream = nullptr;
@@ -18,6 +18,9 @@ VideoDisplay::~VideoDisplay()
 }
 void VideoDisplay::initEncodec()
 {
+decode_fmt_ctx=videoDecoder->getFormatContext();
+decoder_ctx=videoDecoder->getCodecContext();
+
      int video_stream_index = -1;
      qDebug() << "video_stream_index";
     for (unsigned int i = 0; i < decode_fmt_ctx->nb_streams; ++i) {
@@ -79,14 +82,21 @@ void VideoDisplay::initEncodec()
     encode_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
     encode_ctx->width = decodedFrame1->width;
     encode_ctx->height = decodedFrame1->height;
-    encode_ctx->time_base = decode_fmt_ctx->streams[video_stream_index]->time_base;
-    encode_ctx->framerate = decoder_ctx->framerate;
+
+
+    encode_ctx->time_base =AVRational{1, 25};
+//        decode_fmt_ctx->streams[video_stream_index]->time_base;
+    encode_ctx->framerate =AVRational{25, 1};
+//        decoder_ctx->framerate;
     encode_ctx->sample_aspect_ratio = decodedFrame1->sample_aspect_ratio;
     encode_ctx->color_range = decodedFrame1->color_range;
     encode_ctx->color_primaries = decodedFrame1->color_primaries;
     encode_ctx->color_trc = decodedFrame1->color_trc;
     encode_ctx->colorspace = decodedFrame1->colorspace;
     encode_ctx->chroma_sample_location = decodedFrame1->chroma_location;
+    encode_ctx->gop_size = 30;
+    encode_ctx->max_b_frames = 10;
+    encode_ctx->profile = FF_PROFILE_H264_MAIN;
 
     if (encode_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
         encode_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -147,6 +157,7 @@ void VideoDisplay::stopSave()
 {
     saveFlag=false;//开始保存的标志位
     stopSaveFlag=true;//停止保存的标志位
+      qDebug() << " stopSaveFlag=true;//停止保存的标志位";
 }
 
 
@@ -162,7 +173,6 @@ void VideoDisplay::run() {
         frame = frameBuffer.pop();
 
         if (!frame) continue;
-        // emit frameSaveReady(frame);
         if(saveFlag&&!stopSaveFlag)
         {
             sws_scale(ensws_ctx, frame->data, frame->linesize, 0, encode_ctx->height, enframe->data, enframe->linesize);
@@ -178,22 +188,24 @@ void VideoDisplay::run() {
                     av_packet_unref(enpkt);
                 }
             }
-            
-
         }else if(!saveFlag&&stopSaveFlag){
-
-             av_write_trailer(encode_fmt_ctx);
+            if (this->encode_fmt_ctx) {
+                av_write_trailer(this->encode_fmt_ctx);
+            } else {
+                qDebug() << "encode_fmt_ctx is null";
+                // 处理 encode_fmt_ctx 为空的情况...
+            }
         }
         if (!sws_ctx) {
             sws_ctx = sws_getContext(frame->width, frame->height, (AVPixelFormat)frame->format,
                                      frame->width, frame->height, AV_PIX_FMT_RGB24,
                                      SWS_BILINEAR, nullptr, nullptr, nullptr);
         }
-
+          qDebug() << "  QImage img(frame->width, frame->height, QImage::Format_RGB888););";
         QImage img(frame->width, frame->height, QImage::Format_RGB888);
         uint8_t *data[1] = { img.bits() };
         int linesize[1] = { img.bytesPerLine() };
-
+         qDebug() << "          sws_scale(sws_ctx, frame->data, frame->linesize, 0, frame->height, data, linesize)";
         sws_scale(sws_ctx, frame->data, frame->linesize, 0, frame->height, data, linesize);
 
         emit frameReady(img);
