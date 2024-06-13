@@ -18,11 +18,17 @@ public:
     void run() override;
     void stop();
     AVCodecContext* getCodecContext() const;
+    AVFormatContext* getFormatContext() const;
 
 private:
     QString url;
     FrameBuffer &frameBuffer;
-    AVCodecContext *codec_ctx;
+    AVCodecContext *decodec_ctx;
+    AVFormatContext *decode_fmt_ctx;
+    AVCodecParameters *decodecpar;
+    AVCodec *decodec;
+    AVFrame *deframe;
+    AVPacket *depkt;
     bool stopFlag;
 };
 

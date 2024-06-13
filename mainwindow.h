@@ -43,9 +43,9 @@ private slots:
     void onStop();
     void onStopSave();
     void displayFrame(const QImage &image);
-    void on_connect_clicked();
+//    void on_connect_clicked();
 
-    void on_disconnect_clicked();
+//    void on_disconnect_clicked();
 
 private:
     QLabel *videoLabel;

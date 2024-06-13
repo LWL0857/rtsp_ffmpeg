@@ -17,13 +17,22 @@ extern "C" {
 class VideoSaver : public QThread {
     Q_OBJECT
 public:
-    VideoSaver(FrameBuffer &frameBuffer, AVCodecContext *decoder_ctx, const QString &filename);
+    VideoSaver(FrameBuffer &frameBuffer, AVCodecContext *decoder_ctx,AVFormatContext *decode_fmt_ctx,const QString &filename);
     void run() override;
     void stop();
 
 private:
+
     FrameBuffer &frameBuffer;
+    AVFormatContext *encode_fmt_ctx;
+    AVCodecContext *encode_ctx;
+    AVFormatContext *decode_fmt_ctx;
     AVCodecContext *decoder_ctx;
+    AVStream *video_stream;
+    AVCodec *encodec;
+    AVFrame *enframe;
+    AVPacket *enpkt;
+    struct SwsContext *sws_ctx;
     QString filename;
     bool stopFlag;
 };
