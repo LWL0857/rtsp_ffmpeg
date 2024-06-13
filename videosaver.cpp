@@ -407,3 +407,8 @@ void VideoSaver::run() {
 void VideoSaver::stop() {
     stopFlag = true;
 }
+
+QImage VideoSaver::getFrame(const QImage &image)
+{
+
+}

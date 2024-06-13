@@ -21,6 +21,7 @@ public:
     ~VideoSaver();
     void run() override;
     void stop();
+    Qimage getFrame(const QImage &image);
 
 private:
 

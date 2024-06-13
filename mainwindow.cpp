@@ -65,6 +65,7 @@ void MainWindow::onPlay()
     videoDisplay = new VideoDisplay(ui->videoLabel1, frameBuffer);
 
     connect(videoDisplay, &VideoDisplay::frameReady, this, &MainWindow::displayFrame);
+   
 
     videoDecoder->start();
     videoDisplay->start();
@@ -82,8 +83,10 @@ void MainWindow::onSave()
     std::cout<<outputVideoPath_<<std::endl;
     ui->saveVideoPath->setText(QString::fromStdString(outputVideoPath_));
 
+
     if (videoDecoder) {
         videoSaver = new VideoSaver(frameBuffer, videoDecoder->getCodecContext(),videoDecoder->getFormatContext(),outputVideoPath_.c_str());
+        connect(videoDisplay, &VideoDisplay::frameReady, videoSaver, &videoSaver::getFrame);
         videoSaver->start();
     }
 
