@@ -26,9 +26,8 @@ public:
     ~VideoDisplay();
     void run() override;
     void stop();
-//    void startSave();
-    
     void initEncodec();
+    
 public slots:
     void startSave(const QString  &filename);
     void stopSave();

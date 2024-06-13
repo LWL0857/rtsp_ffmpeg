@@ -10,11 +10,6 @@ AVFormatContext *decode_fmt_ctx,AVCodecContext *decoder_ctx):videoLabel(videoLab
     ensws_ctx = nullptr;
     saveFlag=false;//开始保存的标志位
     stopSaveFlag=false;//停止保存的标志位
-
-
-
-
-
 }
 
 VideoDisplay::~VideoDisplay()
@@ -24,9 +19,11 @@ VideoDisplay::~VideoDisplay()
 void VideoDisplay::initEncodec()
 {
      int video_stream_index = -1;
+     qDebug() << "video_stream_index";
     for (unsigned int i = 0; i < decode_fmt_ctx->nb_streams; ++i) {
         if (decode_fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             video_stream_index = i;
+            qDebug() << "  video_stream_index = i;";
             break;
         }
     }

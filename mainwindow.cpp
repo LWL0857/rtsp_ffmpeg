@@ -22,6 +22,14 @@ using namespace std;
 //    avformat_close_input(&s);
 //    return ret;
 //}
+//Delay for some msec
+void Delay(int msec)
+{
+    QTime dieTime = QTime::currentTime().addMSecs(msec);
+    while(QTime::currentTime() < dieTime){
+        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
+    }
+}
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -48,13 +56,16 @@ void MainWindow::onPlay()
     string inputVideoPath_="rtsp://"+ipStr_+":"+portStr_+"/"+pwdStr_;
     QString url = QString::fromStdString(inputVideoPath_);
     videoDecoder = new VideoDecoder(url, frameBuffer);
+    //先开启这个解码线程，因为下面的videoDisplay的初始化需要依靠videoDecoder里run init的参数
+    videoDecoder->start();
+
     videoDisplay = new VideoDisplay(ui->videoLabel1, frameBuffer,videoDecoder->getFormatContext(),videoDecoder->getCodecContext());
 
     connect(videoDisplay, &VideoDisplay::frameReady, this, &MainWindow::displayFrame);
     connect(this,&MainWindow::saveFilename,videoDisplay,&VideoDisplay::startSave);
     connect(this,&MainWindow::stopSave,videoDisplay,&VideoDisplay::stopSave);
 
-    videoDecoder->start();
+
     videoDisplay->start();
 
 }
@@ -105,12 +116,4 @@ void MainWindow::displayFrame(const QImage &image)
 {
     ui->videoLabel1->setPixmap(QPixmap::fromImage(image));
 
-}
-//Delay for some msec
-void Delay(int msec)
-{
-    QTime dieTime = QTime::currentTime().addMSecs(msec);
-    while(QTime::currentTime() < dieTime){
-        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
-    }
 }
