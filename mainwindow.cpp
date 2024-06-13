@@ -9,6 +9,20 @@ extern "C"{
 #include <iostream>
 #include <QTime>
 using namespace std;
+//int avformat_close_input2(AVFormatContext *&s, AVDictionary *opts) {
+//    if (!s) {
+//        return 0;
+//    }
+
+//    int ret = 0;
+//    RTSPState *rt = s->priv_data;
+//    if (rt && rt->rtsp_hd) {
+//        ret = ff_rtsp_send_cmd(s, "TEARDOWN", s->filename, opts);
+//    }
+//    avformat_close_input(&s);
+//    return ret;
+//}
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), frameBuffer(10), videoDecoder(nullptr), videoSaver(nullptr), videoDisplay(nullptr), ui(new Ui::MainWindow) {
@@ -64,7 +78,7 @@ void MainWindow::onSave()
                        QDateTime::currentDateTime().toString("yy.MM.dd").toStdString() +
                        "-" +
                        QDateTime::currentDateTime().toString("hh.mm.ss").toStdString() +
-                       ".mp4";
+                       ".avi";
     std::cout<<outputVideoPath_<<std::endl;
     ui->saveVideoPath->setText(QString::fromStdString(outputVideoPath_));
 
@@ -82,8 +96,9 @@ void MainWindow::onStop()
         videoDecoder->wait();
         delete videoDecoder;
         videoDecoder = nullptr;
+//        int avformat_close_input2(AVFormatContext *&s, AVDictionary *opts)
     }
-    if (videoSaver) {
+        if (videoSaver) {
         videoSaver->stop();
         videoSaver->wait();
         delete videoSaver;
