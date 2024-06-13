@@ -27,7 +27,15 @@ void VideoSaver::run() {
 
     bool codec_initialized = false;
     enframe = av_frame_alloc();
+    if (!enframe) {
+        qDebug() << "Failed to allocate frame";
+        return;
+    }
     enpkt=av_packet_alloc();
+    if (!enpkt) {
+        qDebug() << "Failed to allocate packet";
+        return;
+    }
     int64_t pts = 0;
 
     if (avformat_alloc_output_context2(&encode_fmt_ctx, nullptr, nullptr, filename.toStdString().c_str()) < 0) {
@@ -59,52 +67,54 @@ void VideoSaver::run() {
     // 初始化编码器上下文
 
 
-        encode_ctx->codec_id = encodec->id;
-        encode_ctx->codec_type = AVMEDIA_TYPE_VIDEO;
-        encode_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-        encode_ctx->width = decodedFrame1->width;
-        encode_ctx->height = decodedFrame1->height;
-        encode_ctx->time_base = AVRational{1, 25};
-        encode_ctx->framerate = AVRational{25, 1};
-        encode_ctx->sample_aspect_ratio = decodedFrame1->sample_aspect_ratio;
-        encode_ctx->color_range = decodedFrame1->color_range;
-        encode_ctx->color_primaries = decodedFrame1->color_primaries;
-        encode_ctx->color_trc = decodedFrame1->color_trc;
-        encode_ctx->colorspace = decodedFrame1->colorspace;
-        encode_ctx->chroma_sample_location = decodedFrame1->chroma_location;
+    encode_ctx->codec_id = encodec->id;
+    encode_ctx->codec_type = AVMEDIA_TYPE_VIDEO;
+    encode_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    encode_ctx->width = decodedFrame1->width;
+    encode_ctx->height = decodedFrame1->height;
+    encode_ctx->time_base = AVRational{1, 25};
+    encode_ctx->framerate = AVRational{25, 1};
+    encode_ctx->sample_aspect_ratio = decodedFrame1->sample_aspect_ratio;
+    encode_ctx->color_range = decodedFrame1->color_range;
+    encode_ctx->color_primaries = decodedFrame1->color_primaries;
+    encode_ctx->color_trc = decodedFrame1->color_trc;
+    encode_ctx->colorspace = decodedFrame1->colorspace;
+    encode_ctx->chroma_sample_location = decodedFrame1->chroma_location;
 
-        if (encode_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
-            encode_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-        }
+    if (encode_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
+        encode_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    }
 
-        if (avcodec_open2(encode_ctx, encodec, nullptr) < 0) {
-            qDebug() << "Failed to open codec";
+    if (avcodec_open2(encode_ctx, encodec, nullptr) < 0) {
+        qDebug() << "Failed to open codec";
+        return;
+    }
+
+    if (avcodec_parameters_from_context(video_stream->codecpar, encode_ctx) < 0) {
+        qDebug() << "Failed to copy codec parameters";
+        return;
+    }
+
+    if (!(encode_fmt_ctx->oformat->flags & AVFMT_NOFILE)) {
+        if (avio_open(&encode_fmt_ctx->pb, filename.toStdString().c_str(), AVIO_FLAG_WRITE) < 0) {
+            qDebug() << "Failed to open output file";
             return;
         }
+    }
+    if (avformat_write_header(encode_fmt_ctx, nullptr) < 0) {
+        qDebug() << "Failed to write header";
+        return;
+    }
+   if (av_frame_get_buffer(enframe, 0) < 0) {
+        char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
+        av_strerror(AVERROR(errno), errbuf, AV_ERROR_MAX_STRING_SIZE);
+        qDebug() << "Failed to allocate frame buffer:" << errbuf;
+        return;
+   }
 
-        if (avcodec_parameters_from_context(video_stream->codecpar, encode_ctx) < 0) {
-            qDebug() << "Failed to copy codec parameters";
-            return;
-        }
-
-        if (!(encode_fmt_ctx->oformat->flags & AVFMT_NOFILE)) {
-            if (avio_open(&encode_fmt_ctx->pb, filename.toStdString().c_str(), AVIO_FLAG_WRITE) < 0) {
-                qDebug() << "Failed to open output file";
-                return;
-            }
-        }
-        if (avformat_write_header(encode_fmt_ctx, nullptr) < 0) {
-            qDebug() << "Failed to write header";
-            return;
-        }
-        if (av_frame_get_buffer(enframe, 32) < 0) {
-            qDebug() << "Failed to allocate frame buffer";
-            return;
-        }
-
-        sws_ctx = sws_getContext(decodedFrame1->width, decodedFrame1->height, AV_PIX_FMT_YUV420P,
-                                 decodedFrame1->width, decodedFrame1->height, AV_PIX_FMT_YUV420P,
-                                 SWS_BILINEAR, nullptr, nullptr, nullptr);
+    sws_ctx = sws_getContext(decodedFrame1->width, decodedFrame1->height, AV_PIX_FMT_YUV420P,
+                                decodedFrame1->width, decodedFrame1->height, AV_PIX_FMT_YUV420P,
+                                SWS_BILINEAR, nullptr, nullptr, nullptr);
 //        AV_PIX_FMT_RGB24
     while (!stopFlag) {
         AVFrame* decodedFrame = frameBuffer.peek();
