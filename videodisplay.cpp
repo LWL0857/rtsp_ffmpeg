@@ -84,10 +84,11 @@ decoder_ctx=videoDecoder->getCodecContext();
     encode_ctx->height = decodedFrame1->height;
 
 
-    encode_ctx->time_base =AVRational{1, 25};
-//        decode_fmt_ctx->streams[video_stream_index]->time_base;
-    encode_ctx->framerate =AVRational{25, 1};
-//        decoder_ctx->framerate;
+//    encode_ctx->time_base =AVRational{1, 25};
+//    encode_ctx->framerate =AVRational{25, 1};
+
+    encode_ctx->time_base =decoder_ctx->time_base;
+    encode_ctx->framerate = decoder_ctx->framerate;
     encode_ctx->sample_aspect_ratio = decodedFrame1->sample_aspect_ratio;
     encode_ctx->color_range = decodedFrame1->color_range;
     encode_ctx->color_primaries = decodedFrame1->color_primaries;
@@ -111,6 +112,13 @@ decoder_ctx=videoDecoder->getCodecContext();
         qDebug() << "Failed to copy codec parameters";
         return;
     }
+//    video_stream->time_base=AVRational{1, 25};
+//    video_stream->r_frame_rate =AVRational{25, 1};
+    video_stream->time_base = encode_ctx->time_base;
+
+    // 如果需要，可以设置视频流的帧率
+    video_stream->r_frame_rate = encode_ctx->framerate;
+
 
     if (!(encode_fmt_ctx->oformat->flags & AVFMT_NOFILE)) {
         if (avio_open(&encode_fmt_ctx->pb, filename.toStdString().c_str(), AVIO_FLAG_WRITE) < 0) {
@@ -184,7 +192,13 @@ void VideoDisplay::run() {
             if (avcodec_send_frame(encode_ctx, enframe) >= 0) {
                 while (avcodec_receive_packet(encode_ctx, enpkt) >= 0) {
                     //转换 AVPacket 的时间基为 输出流的时间基。
-                    av_packet_rescale_ts(enpkt, encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base);
+
+                    //转换 AVPacket 的时间基为 输出流的时间基。
+//                    enpkt->pts = av_rescale_q_rnd(enpkt->pts, encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base,  static_cast<AVRounding>(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
+//                    enpkt->dts = av_rescale_q_rnd(enpkt->dts,encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base,  static_cast<AVRounding>(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
+//                    enpkt->duration = av_rescale_q_rnd(enpkt->duration, encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base,  static_cast<AVRounding>(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
+//                    av_packet_rescale_ts(enpkt, encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base);
+                    av_packet_rescale_ts(enpkt, encode_ctx->time_base, video_stream->time_base);
                     enpkt->stream_index = video_stream->index;
                     if (av_interleaved_write_frame(encode_fmt_ctx, enpkt) < 0) {
                         qDebug() << "Failed to write frame";
@@ -193,8 +207,18 @@ void VideoDisplay::run() {
                 }
             }
         }else if(!saveFlag&&stopSaveFlag){
+
+            qDebug() << "decoder_ctx->time_base:" << decoder_ctx->time_base.num << "/" << decoder_ctx->time_base.den;
+            qDebug() << "decoder_ctx->framerate:" << decoder_ctx->framerate.num << "/" << decoder_ctx->framerate.den;
+
+
+            qDebug() << "video_stream->time_base:" << video_stream->time_base.num << "/" << video_stream->time_base.den;
+            qDebug() << "video_stream->framerate:" << video_stream->r_frame_rate.num << "/" << video_stream->r_frame_rate.den;
+
             qDebug() << "encode_ctx->time_base:" << encode_ctx->time_base.num << "/" << encode_ctx->time_base.den;
-            qDebug() << "encode_ctx->framerate:" << encode_ctx->framerate.num << "/" << encode_ctx->framerate.den;
+             qDebug() << "encode_ctx->time_base:" << encode_ctx->framerate.num << "/" << encode_ctx->framerate.den;
+
+
             if (encode_fmt_ctx) {
                 av_write_trailer(encode_fmt_ctx);
             } else {
@@ -211,15 +235,13 @@ void VideoDisplay::run() {
                                      frame->width, frame->height, AV_PIX_FMT_RGB24,
                                      SWS_BILINEAR, nullptr, nullptr, nullptr);
         }
-          qDebug() << "  QImage img(frame->width, frame->height, QImage::Format_RGB888););";
         QImage img(frame->width, frame->height, QImage::Format_RGB888);
         uint8_t *data[1] = { img.bits() };
         int linesize[1] = { img.bytesPerLine() };
-         qDebug() << "          sws_scale(sws_ctx, frame->data, frame->linesize, 0, frame->height, data, linesize)";
         sws_scale(sws_ctx, frame->data, frame->linesize, 0, frame->height, data, linesize);
-
         emit frameReady(img);
         av_frame_free(&frame);
+//        QThread::msleep(40);  // 1000ms / 25 = 40ms
     }
 
     if (sws_ctx) {
