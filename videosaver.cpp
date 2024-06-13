@@ -121,6 +121,7 @@ void VideoSaver::run() {
                                 decodedFrame1->width, decodedFrame1->height, AV_PIX_FMT_YUV420P,
                                 SWS_BILINEAR, nullptr, nullptr, nullptr);
 //        AV_PIX_FMT_RGB24
+     qDebug() << "before while";
     while (!stopFlag) {
         AVFrame* decodedFrame = frameBuffer.peek();
 //        if (!codec_initialized) {
@@ -175,14 +176,18 @@ void VideoSaver::run() {
             qDebug() << "Failed to peek frame from buffer";
             continue; // Skip this iteration if no frame is available
         }
-        // sws_scale(sws_ctx, decodedFrame->data, decodedFrame->linesize, 0, encode_ctx->height, enframe->data, enframe->linesize);
+        sws_scale(sws_ctx, decodedFrame->data, decodedFrame->linesize, 0, encode_ctx->height, enframe->data, enframe->linesize);
         enframe->pts = pts++;
-
+             qDebug() << "avcodec_send_frame";
         if (avcodec_send_frame(encode_ctx, enframe) >= 0) {
             while (avcodec_receive_packet(encode_ctx, enpkt) >= 0) {
+                 qDebug() << " av_packet_rescale_ts(enpkt, encode_ctx->time_base, video_stream->time_base);";
                 av_packet_rescale_ts(enpkt, encode_ctx->time_base, video_stream->time_base);
+                  qDebug() << " enpkt->stream_index = video_stream->index;";
                 enpkt->stream_index = video_stream->index;
+                     qDebug() << "  av_interleaved_write_frame(decode_fmt_ctx, enpkt);";
                 av_interleaved_write_frame(decode_fmt_ctx, enpkt);
+                     qDebug() << "   av_packet_unref(enpkt);";
                 av_packet_unref(enpkt);
             }
         }
