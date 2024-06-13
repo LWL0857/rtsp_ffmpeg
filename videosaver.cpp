@@ -105,7 +105,12 @@ void VideoSaver::run() {
         qDebug() << "Failed to write header";
         return;
     }
-   if (av_frame_get_buffer(enframe, 0) < 0) {
+
+    enframe->format = encode_ctx->pix_fmt;
+    enframe->width = encode_ctx->width;
+    enframe->height = encode_ctx->height;
+
+   if (av_frame_get_buffer(enframe,32) < 0) {
         char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
         av_strerror(AVERROR(errno), errbuf, AV_ERROR_MAX_STRING_SIZE);
         qDebug() << "Failed to allocate frame buffer:" << errbuf;
