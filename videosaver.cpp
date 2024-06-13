@@ -12,6 +12,14 @@ VideoSaver::VideoSaver(FrameBuffer &frameBuffer, AVCodecContext *decoder_ctx, AV
 
 }
 
+VideoSaver::~VideoSaver()
+{
+    avcodec_free_context(&encode_ctx);
+    avformat_free_context(encode_fmt_ctx);
+    av_frame_free(&enframe);
+    av_packet_free(&enpkt);
+}
+
 
 
 
@@ -44,7 +52,11 @@ void VideoSaver::run() {
         return;
     }
     AVFrame* decodedFrame1 = frameBuffer.peek();
-        // 初始化编码器上下文
+     if (!decodedFrame1) {
+        qDebug() << "Failed to peek frame from buffer";
+        return;
+    }
+    // 初始化编码器上下文
 
 
         encode_ctx->codec_id = encodec->id;
@@ -90,13 +102,10 @@ void VideoSaver::run() {
             return;
         }
 
-
-
-
-
-
-
-
+        sws_ctx = sws_getContext(decodedFrame1->width, decodedFrame1->height, AV_PIX_FMT_YUV420P,
+                                 decodedFrame1->width, decodedFrame1->height, AV_PIX_FMT_YUV420P,
+                                 SWS_BILINEAR, nullptr, nullptr, nullptr);
+//        AV_PIX_FMT_RGB24
     while (!stopFlag) {
         AVFrame* decodedFrame = frameBuffer.peek();
 //        if (!codec_initialized) {
@@ -147,12 +156,11 @@ void VideoSaver::run() {
             
 //            codec_initialized = true;
 //        }
-        sws_ctx = sws_getContext(decodedFrame->width, decodedFrame->height, AV_PIX_FMT_YUV420P,
-                                 decodedFrame->width, decodedFrame->height, AV_PIX_FMT_YUV420P,
-                                 SWS_BILINEAR, nullptr, nullptr, nullptr);
-//        AV_PIX_FMT_RGB24
-
-        sws_scale(sws_ctx, decodedFrame->data, decodedFrame->linesize, 0, encode_ctx->height, enframe->data, enframe->linesize);
+         if (!decodedFrame) {
+            qDebug() << "Failed to peek frame from buffer";
+            continue; // Skip this iteration if no frame is available
+        }
+        // sws_scale(sws_ctx, decodedFrame->data, decodedFrame->linesize, 0, encode_ctx->height, enframe->data, enframe->linesize);
         enframe->pts = pts++;
 
         if (avcodec_send_frame(encode_ctx, enframe) >= 0) {
@@ -169,12 +177,8 @@ void VideoSaver::run() {
 
     av_write_trailer(decode_fmt_ctx);
 
-    av_frame_free(&enframe);
-    av_packet_free(&enpkt);
-    avcodec_free_context(&encode_ctx);
-    avformat_free_context(decode_fmt_ctx);
-    // Deinitialize network
-    avformat_network_deinit();
+   
+
 }
 
 void VideoSaver::stop() {

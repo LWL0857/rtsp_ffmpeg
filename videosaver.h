@@ -18,6 +18,7 @@ class VideoSaver : public QThread {
     Q_OBJECT
 public:
     VideoSaver(FrameBuffer &frameBuffer, AVCodecContext *decoder_ctx,AVFormatContext *decode_fmt_ctx,const QString &filename);
+    ~VideoSaver();
     void run() override;
     void stop();
 
