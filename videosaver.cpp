@@ -25,6 +25,19 @@ VideoSaver::~VideoSaver()
 
 void VideoSaver::run() {
 
+    int video_stream_index = -1;
+    for (unsigned int i = 0; i < decode_fmt_ctx->nb_streams; ++i) {
+        if (decode_fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            video_stream_index = i;
+            break;
+        }
+    }
+
+    if (video_stream_index == -1) {
+        qDebug() << "Failed to find video stream";
+        return;
+    }
+
     bool codec_initialized = false;
     enframe = av_frame_alloc();
     if (!enframe) {
@@ -54,6 +67,9 @@ void VideoSaver::run() {
         qDebug() << "Failed to create new stream";
         return;
     }
+    video_stream->time_base = fmt_ctx->streams[video_stream_index]->time_base;
+
+    
     encode_ctx = avcodec_alloc_context3(encodec);
     if (!encode_ctx) {
         qDebug() << "Failed to allocate codec context";
@@ -72,7 +88,7 @@ void VideoSaver::run() {
     encode_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
     encode_ctx->width = decodedFrame1->width;
     encode_ctx->height = decodedFrame1->height;
-    encode_ctx->time_base =decode_fmt_ctx->streams[0]->time_base;
+    encode_ctx->time_base = decode_fmt_ctx->streams[video_stream_index]->time_base;
 
 //        AVRational{1, 25};
     encode_ctx->framerate =decoder_ctx->framerate;
@@ -184,16 +200,17 @@ void VideoSaver::run() {
         }
         sws_scale(sws_ctx, decodedFrame->data, decodedFrame->linesize, 0, encode_ctx->height, enframe->data, enframe->linesize);
         enframe->pts = pts++;
-             qDebug() << "avcodec_send_frame";
+            //  qDebug() << "avcodec_send_frame";
         if (avcodec_send_frame(encode_ctx, enframe) >= 0) {
             while (avcodec_receive_packet(encode_ctx, enpkt) >= 0) {
-                 qDebug() << " av_packet_rescale_ts(enpkt, encode_ctx->time_base, video_stream->time_base);";
+                //  qDebug() << " av_packet_rescale_ts(enpkt, encode_ctx->time_base, video_stream->time_base);";
+                //重新调整时间戳（PTS 和 DTS）的函数,将一个 AVPacket 结构体中的时间戳从一种时间基准转换为另一种时间基准
                 av_packet_rescale_ts(enpkt, encode_ctx->time_base, video_stream->time_base);
-                  qDebug() << " enpkt->stream_index = video_stream->index;";
+                //   qDebug() << " enpkt->stream_index = video_stream->index;";
                 enpkt->stream_index = video_stream->index;
                      qDebug() << "  av_interleaved_write_frame(decode_fmt_ctx, enpkt);";
                 av_interleaved_write_frame(encode_fmt_ctx, enpkt);
-                     qDebug() << "   av_packet_unref(enpkt);";
+                    //  qDebug() << "   av_packet_unref(enpkt);";
                 av_packet_unref(enpkt);
             }
         }
