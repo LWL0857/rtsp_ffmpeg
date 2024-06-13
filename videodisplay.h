@@ -27,6 +27,18 @@ private:
     QLabel *videoLabel;
     FrameBuffer &frameBuffer;
     bool stopFlag;
+    bool saveFlag;
+    AVFormatContext *encode_fmt_ctx;
+    AVCodecContext *encode_ctx;
+    AVFormatContext *decode_fmt_ctx;
+    AVCodecContext *decoder_ctx;
+    AVStream *video_stream;
+    AVCodec *encodec;
+    AVFrame *enframe;
+    AVPacket *enpkt;
+    struct SwsContext *sws_ctx_en;
+    QString filename;
+    bool stopFlag;
 };
 
 #endif // VIDEODISPLAY_H
