@@ -201,7 +201,7 @@ void VideoSaver::run() {
         av_frame_free(&decodedFrame);
     }
 
-    av_write_trailer(decode_fmt_ctx);
+    av_write_trailer(encode_fmt_ctx);
 
    
 
