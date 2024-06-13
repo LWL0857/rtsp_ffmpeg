@@ -19,6 +19,9 @@ public:
     VideoDisplay(QLabel *videoLabel, FrameBuffer &frameBuffer);
     void run() override;
     void stop();
+    void startSave();
+    void stopSave();
+    void initEncodec();
 
 signals:
     void frameReady(const QImage &image);
@@ -28,6 +31,8 @@ private:
     QLabel *videoLabel;
     FrameBuffer &frameBuffer;
     bool stopFlag;
+    bool saveFlag;
+    bool stopSaveFlag
 };
 
 #endif // VIDEODISPLAY_H

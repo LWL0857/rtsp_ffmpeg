@@ -3,6 +3,10 @@
 VideoDisplay::VideoDisplay(QLabel *videoLabel, FrameBuffer &frameBuffer)
     : videoLabel(videoLabel), frameBuffer(frameBuffer), stopFlag(false) {}
 
+
+
+
+
 void VideoDisplay::run() {
     AVFrame *frame = nullptr;
     SwsContext *sws_ctx = nullptr;
@@ -12,6 +16,15 @@ void VideoDisplay::run() {
 
         if (!frame) continue;
         // emit frameSaveReady(frame);
+        if(saveFlag&&!stopSaveFlag)
+        {
+            
+
+        }else if(!saveFlag&&stopSaveFlag){
+
+        }
+
+
 
         if (!sws_ctx) {
             sws_ctx = sws_getContext(frame->width, frame->height, (AVPixelFormat)frame->format,
@@ -24,7 +37,7 @@ void VideoDisplay::run() {
         int linesize[1] = { img.bytesPerLine() };
 
         sws_scale(sws_ctx, frame->data, frame->linesize, 0, frame->height, data, linesize);
-        
+
         emit frameReady(img);
         av_frame_free(&frame);
     }

@@ -86,7 +86,7 @@ void MainWindow::onSave()
 
     if (videoDecoder) {
         videoSaver = new VideoSaver(frameBuffer, videoDecoder->getCodecContext(),videoDecoder->getFormatContext(),outputVideoPath_.c_str());
-        connect(videoDisplay, &VideoDisplay::frameReady, videoSaver, &videoSaver::getFrame);
+        // connect(videoDisplay, &VideoDisplay::frameReady, videoSaver, &videoSaver::getFrame);
         videoSaver->start();
     }
 
