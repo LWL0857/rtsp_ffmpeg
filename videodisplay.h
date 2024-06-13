@@ -40,6 +40,7 @@ private:
     FrameBuffer &frameBuffer;
 
     //保存视频的相关变量
+    int video_stream_index;
     VideoDecoder *videoDecoder;
     int pts;
     QString filename;

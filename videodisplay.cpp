@@ -21,7 +21,7 @@ void VideoDisplay::initEncodec()
 decode_fmt_ctx=videoDecoder->getFormatContext();
 decoder_ctx=videoDecoder->getCodecContext();
 
-     int video_stream_index = -1;
+    video_stream_index = -1;
      qDebug() << "video_stream_index";
     for (unsigned int i = 0; i < decode_fmt_ctx->nb_streams; ++i) {
         if (decode_fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -155,9 +155,13 @@ void VideoDisplay::startSave(const QString  &infilename)
 
 void VideoDisplay::stopSave()
 {
+    //只有已经开始保存的时候，才能置为停止保存的
+//    if(saveFlag&&!stopSaveFlag)
+//    {
     saveFlag=false;//开始保存的标志位
     stopSaveFlag=true;//停止保存的标志位
-      qDebug() << " stopSaveFlag=true;//停止保存的标志位";
+//    }
+    qDebug() << " stopSaveFlag=true;//停止保存的标志位";
 }
 
 
@@ -180,7 +184,7 @@ void VideoDisplay::run() {
             if (avcodec_send_frame(encode_ctx, enframe) >= 0) {
                 while (avcodec_receive_packet(encode_ctx, enpkt) >= 0) {
                     //转换 AVPacket 的时间基为 输出流的时间基。
-                    av_packet_rescale_ts(enpkt, encode_fmt_ctx->streams[0]->time_base, video_stream->time_base);
+                    av_packet_rescale_ts(enpkt, encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base);
                     enpkt->stream_index = video_stream->index;
                     if (av_interleaved_write_frame(encode_fmt_ctx, enpkt) < 0) {
                         qDebug() << "Failed to write frame";
@@ -189,12 +193,18 @@ void VideoDisplay::run() {
                 }
             }
         }else if(!saveFlag&&stopSaveFlag){
-            if (this->encode_fmt_ctx) {
-                av_write_trailer(this->encode_fmt_ctx);
+            qDebug() << "encode_ctx->time_base:" << encode_ctx->time_base.num << "/" << encode_ctx->time_base.den;
+            qDebug() << "encode_ctx->framerate:" << encode_ctx->framerate.num << "/" << encode_ctx->framerate.den;
+            if (encode_fmt_ctx) {
+                av_write_trailer(encode_fmt_ctx);
             } else {
                 qDebug() << "encode_fmt_ctx is null";
                 // 处理 encode_fmt_ctx 为空的情况...
             }
+            //执行结束后，要将标志位置为false,否则下次循环又会跑进这个判断里，导致调用encode_fmt_ctx的时候出现段错误，因为av_write_trailer会释放资源
+            saveFlag=false;//开始保存的标志位
+            stopSaveFlag=false;//停止保存的标志位
+
         }
         if (!sws_ctx) {
             sws_ctx = sws_getContext(frame->width, frame->height, (AVPixelFormat)frame->format,
