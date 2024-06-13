@@ -15,6 +15,7 @@ class VideoDecoder : public QThread
 {
 public:
     VideoDecoder(const QString &url, FrameBuffer &frameBuffer);
+    ~VideoDecoder();
     void run() override;
     void stop();
     AVCodecContext* getCodecContext() const;

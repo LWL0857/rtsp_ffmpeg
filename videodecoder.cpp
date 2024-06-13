@@ -9,6 +9,15 @@ VideoDecoder::VideoDecoder(const QString &url, FrameBuffer &frameBuffer)
 
 }
 
+VideoDecoder::~VideoDecoder()
+{
+    av_frame_free(&deframe);
+    av_packet_free(&depkt);
+    avcodec_free_context(&decodec_ctx);
+    avformat_close_input(&decode_fmt_ctx);
+
+}
+
 void VideoDecoder::run() {
     int read_end = 0;
     //网络库init,为了读取网络流
@@ -93,10 +102,7 @@ void VideoDecoder::run() {
 
     }
 
-    av_frame_free(&deframe);
-    av_packet_free(&depkt);
-    avcodec_free_context(&decodec_ctx);
-    avformat_close_input(&decode_fmt_ctx);
+
 }
 
 void VideoDecoder::stop() {

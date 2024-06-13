@@ -148,7 +148,7 @@ decoder_ctx=videoDecoder->getCodecContext();
                              decodedFrame1->width, decodedFrame1->height, AV_PIX_FMT_YUV420P,
                              SWS_BILINEAR, nullptr, nullptr, nullptr);
 
-    qDebug() << "before while";
+    qDebug() << "initEncodec end";
 
 
 }
@@ -170,22 +170,16 @@ void VideoDisplay::stopSave()
     saveFlag=false;//开始保存的标志位
     stopSaveFlag=true;//停止保存的标志位
 //    }
-    qDebug() << " stopSaveFlag=true;//停止保存的标志位";
 }
-
-
-
-
 
 void VideoDisplay::run() {
     AVFrame *frame = nullptr;
     SwsContext *sws_ctx = nullptr;
-
-
     while (!stopFlag) {
+        //从环形队列取出一帧数据
         frame = frameBuffer.pop();
-
         if (!frame) continue;
+        //保存视频的逻辑，只有按下视频保存，才会initencode，然后每次读数据的时候都会进行文件的写入
         if(saveFlag&&!stopSaveFlag)
         {
             sws_scale(ensws_ctx, frame->data, frame->linesize, 0, encode_ctx->height, enframe->data, enframe->linesize);
@@ -193,13 +187,8 @@ void VideoDisplay::run() {
             if (avcodec_send_frame(encode_ctx, enframe) >= 0) {
                 while (avcodec_receive_packet(encode_ctx, enpkt) >= 0) {
                     //转换 AVPacket 的时间基为 输出流的时间基。
-
-                    //转换 AVPacket 的时间基为 输出流的时间基。
-//                    enpkt->pts = av_rescale_q_rnd(enpkt->pts, encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base,  static_cast<AVRounding>(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
-//                    enpkt->dts = av_rescale_q_rnd(enpkt->dts,encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base,  static_cast<AVRounding>(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
-//                    enpkt->duration = av_rescale_q_rnd(enpkt->duration, encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base,  static_cast<AVRounding>(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
-//                    av_packet_rescale_ts(enpkt, encode_fmt_ctx->streams[video_stream_index]->time_base, video_stream->time_base);
                     av_packet_rescale_ts(enpkt, encode_ctx->time_base, video_stream->time_base);
+                    //给enpkt打上流索引
                     enpkt->stream_index = video_stream->index;
                     if (av_interleaved_write_frame(encode_fmt_ctx, enpkt) < 0) {
                         qDebug() << "Failed to write frame";
@@ -211,15 +200,10 @@ void VideoDisplay::run() {
 
             qDebug() << "decoder_ctx->time_base:" << decoder_ctx->time_base.num << "/" << decoder_ctx->time_base.den;
             qDebug() << "decoder_ctx->framerate:" << decoder_ctx->framerate.num << "/" << decoder_ctx->framerate.den;
-
-
             qDebug() << "video_stream->time_base:" << video_stream->time_base.num << "/" << video_stream->time_base.den;
             qDebug() << "video_stream->framerate:" << video_stream->r_frame_rate.num << "/" << video_stream->r_frame_rate.den;
-
             qDebug() << "encode_ctx->time_base:" << encode_ctx->time_base.num << "/" << encode_ctx->time_base.den;
-             qDebug() << "encode_ctx->time_base:" << encode_ctx->framerate.num << "/" << encode_ctx->framerate.den;
-
-
+            qDebug() << "encode_ctx->time_base:" << encode_ctx->framerate.num << "/" << encode_ctx->framerate.den;
             if (encode_fmt_ctx) {
                 av_write_trailer(encode_fmt_ctx);
             } else {
